@@ -12,6 +12,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <string.h>
+#include "tetro.h"
 // includes
 
 /**
@@ -53,6 +54,7 @@ struct editorConfig {
 };
 
 struct editorConfig E;
+tetro *g_tetro = NULL;
 
 /**
  * @brief Exits with an error.
@@ -67,6 +69,11 @@ void die(char *s) {
  * settings.
  * */
 void disableRawMode() {
+  if (g_tetro) {
+    tetro_free(g_tetro);
+    g_tetro = NULL;
+  }
+
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig) == -1) {
     die("tcsetattr");
   }
@@ -333,22 +340,34 @@ void getWelcomeString(char *buffer, int arrayLen, int *sLen) {
  * */
 void editorDrawRows(struct abuf *ab) {
   for (int y = 0; y < E.screenRows; y++) {
-    if (y == E.screenRows / 3) {
-      char welcome[80];
-      int len;
+    // if (y == E.screenRows / 3) {
+    //   char welcome[80];
+    //   int len;
 
-      getWelcomeString(welcome, sizeof(welcome), &len);
-      int padding = (E.screenCols - len) / 2;
-      if (padding) {
-        abAppend(ab, "~", 1);
-        padding--;
+    //   getWelcomeString(welcome, sizeof(welcome), &len);
+    //   int padding = (E.screenCols - len) / 2;
+    //   if (padding) {
+    //     abAppend(ab, "~", 1);
+    //     padding--;
+    //   }
+
+    //   while (padding--) abAppend(ab, " ", 1);
+
+    //   abAppend(ab, welcome, len);
+    // } else {
+    //   abAppend(ab, "~", 1);
+    // }
+
+    for (int x = 0; x < E.screenCols; x++) {
+      int curr = y * E.screenCols + x;
+      if (curr == g_tetro->seq[0] ||
+        curr == g_tetro->seq[1] ||
+        curr == g_tetro->seq[2] ||
+        curr == g_tetro->seq[3]) {
+        abAppend(ab, "X", 1);
+      } else {
+        abAppend(ab, " ", 1);
       }
-
-      while (padding--) abAppend(ab, " ", 1);
-
-      abAppend(ab, welcome, len);
-    } else {
-      abAppend(ab, "~", 1);
     }
 
     // Erases to the right of the cursor
@@ -365,6 +384,8 @@ void editorDrawRows(struct abuf *ab) {
  * */
 void editorRefreshScreen() {
   struct abuf ab = ABUF_INIT;
+
+  g_tetro->rotate(g_tetro, E.screenCols);
 
   abAppend(&ab, "\x1b[?25l", 6);
   abAppend(&ab, "\x1b[H", 3);
@@ -387,6 +408,7 @@ void editorRefreshScreen() {
 // init
 
 int main() {
+  g_tetro = tetro_create();
   enableRawMode();
   initEditor();
 
