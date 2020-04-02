@@ -365,7 +365,9 @@ void editorProcessKeypress() {
       break;
 
     case ARROW_UP:
+      break;
     case ARROW_DOWN:
+      break;
     case ARROW_LEFT:
       moveLeft();
       break;
