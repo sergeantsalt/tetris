@@ -8,10 +8,13 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
-#include <string.h>
+#include <sys/time.h>
+#include <time.h>
+
 #include "tetro.h"
 // includes
 
@@ -116,29 +119,44 @@ int parseEscapeSeq() {
       if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
       if (seq[2] == '~') {
         switch (seq[1]) {
-          case '1': return HOME_KEY;
-          case '3': return DEL_KEY;
-          case '4': return END_KEY;
-          case '5': return PAGE_UP;
-          case '6': return PAGE_DOWN;
-          case '7': return HOME_KEY;
-          case '8': return END_KEY;
+          case '1':
+            return HOME_KEY;
+          case '3':
+            return DEL_KEY;
+          case '4':
+            return END_KEY;
+          case '5':
+            return PAGE_UP;
+          case '6':
+            return PAGE_DOWN;
+          case '7':
+            return HOME_KEY;
+          case '8':
+            return END_KEY;
         }
       }
     } else {
       switch (seq[1]) {
-        case 'A': return ARROW_UP;
-        case 'B': return ARROW_DOWN;
-        case 'C': return ARROW_RIGHT;
-        case 'D': return ARROW_LEFT;
-        case 'H': return HOME_KEY;
-        case 'F': return END_KEY;
+        case 'A':
+          return ARROW_UP;
+        case 'B':
+          return ARROW_DOWN;
+        case 'C':
+          return ARROW_RIGHT;
+        case 'D':
+          return ARROW_LEFT;
+        case 'H':
+          return HOME_KEY;
+        case 'F':
+          return END_KEY;
       }
     }
   } else if (seq[0] == 'O') {
     switch (seq[1]) {
-      case 'H': return HOME_KEY;
-      case 'F': return END_KEY;
+      case 'H':
+        return HOME_KEY;
+      case 'F':
+        return END_KEY;
     }
   }
 
@@ -217,7 +235,8 @@ struct abuf {
 /**
  * @brief Initializes screen redraw buffer string.
  * */
-#define ABUF_INIT {NULL, 0}
+#define ABUF_INIT \
+  { NULL, 0 }
 
 /**
  * @brief Gets the window setup for drawing
@@ -225,7 +244,7 @@ struct abuf {
 void initEditor() {
   E.cx = 0;
   E.cy = 0;
-  
+
   if (getWindowSize(&E.screenRows, &E.screenCols) == -1) {
     die("getWindowSize");
   }
@@ -249,9 +268,7 @@ void abAppend(struct abuf *ab, const char *s, int len) {
 /**
  * @brief Frees the buffer
  * */
-void abFree(struct abuf *ab) {
-  free(ab->b);
-}
+void abFree(struct abuf *ab) { free(ab->b); }
 
 // terminal
 
@@ -304,13 +321,12 @@ void editorProcessKeypress() {
       break;
 
     case PAGE_UP:
-    case PAGE_DOWN:
-      {
-        int times = E.screenRows;
-        while (times--) {
-          editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
-        }
+    case PAGE_DOWN: {
+      int times = E.screenRows;
+      while (times--) {
+        editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
       }
+    }
 
     case ARROW_UP:
     case ARROW_DOWN:
@@ -326,10 +342,9 @@ void editorProcessKeypress() {
 // input
 
 void getWelcomeString(char *buffer, int arrayLen, int *sLen) {
-  int len = snprintf(buffer, arrayLen,
-    "Kilo editor -- version %s", KILO_VERSION);
-  if (len > E.screenCols)
-    len = E.screenCols;
+  int len =
+      snprintf(buffer, arrayLen, "Kilo editor -- version %s", KILO_VERSION);
+  if (len > E.screenCols) len = E.screenCols;
 
   *sLen = len;
 }
@@ -360,10 +375,8 @@ void editorDrawRows(struct abuf *ab) {
 
     for (int x = 0; x < E.screenCols; x++) {
       int curr = y * E.screenCols + x;
-      if (curr == g_tetro->seq[0] ||
-        curr == g_tetro->seq[1] ||
-        curr == g_tetro->seq[2] ||
-        curr == g_tetro->seq[3]) {
+      if (curr == g_tetro->seq[0] || curr == g_tetro->seq[1] ||
+          curr == g_tetro->seq[2] || curr == g_tetro->seq[3]) {
         abAppend(ab, "X", 1);
       } else {
         abAppend(ab, " ", 1);
@@ -412,7 +425,16 @@ int main() {
   enableRawMode();
   initEditor();
 
+  struct timeval timer, start;
+  gettimeofday(&timer, NULL);
   while (1) {
+    gettimeofday(&start, NULL);
+    if (start.tv_sec - timer.tv_sec > 5) {
+      tetro_free(g_tetro);
+      g_tetro = tetro_create();
+      timer = start;
+    }
+
     editorRefreshScreen();
     editorProcessKeypress();
   }

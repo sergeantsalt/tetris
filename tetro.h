@@ -6,7 +6,16 @@ enum orientation {
   RIGHT
 };
 
+enum tetro_type {
+  LINE_BLOCK = 1,
+  SQUARE_BLOCK,
+  P_BLOCK,
+  Z_BLOCK,
+  L_BLOCK,
+};
+
 typedef struct tetro_t {
+  enum tetro_type type;
   enum orientation o;
   int pos;
   int seq[4];
