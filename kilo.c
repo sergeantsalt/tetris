@@ -16,6 +16,7 @@
 #include <time.h>
 
 #include "tetro.h"
+#include "board.h"
 // includes
 
 /**
@@ -169,7 +170,18 @@ int parseEscapeSeq() {
 int editorReadKey() {
   int nread;
   char c;
+  struct timeval timer, start;
+
+  gettimeofday(&start, NULL);
+  timer = start;
+
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+
+    gettimeofday(&timer, NULL);
+    if (timer.tv_sec - start.tv_sec >= 1) {
+      break;
+    }
+
     if (nread == -1 && errno != EAGAIN) die("read");
   }
 
@@ -299,6 +311,26 @@ void editorMoveCursor(int key) {
   }
 }
 
+void moveLeft() {
+  g_tetro->pos--;
+  g_tetro->update(g_tetro, E.screenCols);
+  
+  if (board_collides(g_tetro)) {
+    g_tetro->pos++;
+    g_tetro->update(g_tetro, E.screenCols);
+  }
+}
+
+void moveRight() {
+  g_tetro->pos++;
+  g_tetro->update(g_tetro, E.screenCols);
+  
+  if (board_collides(g_tetro)) {
+    g_tetro->pos--;
+    g_tetro->update(g_tetro, E.screenCols);
+  }
+}
+
 /**
  * @brief Process key presses
  * */
@@ -328,11 +360,18 @@ void editorProcessKeypress() {
       }
     }
 
+    case ' ':
+      g_tetro->o++;
+      break;
+
     case ARROW_UP:
     case ARROW_DOWN:
     case ARROW_LEFT:
+      moveLeft();
+      break;
     case ARROW_RIGHT:
-      editorMoveCursor(c);
+      moveRight();
+      // editorMoveCursor(c);
       break;
     default:
       break;
@@ -354,30 +393,18 @@ void getWelcomeString(char *buffer, int arrayLen, int *sLen) {
  * @brief Draws tildes that make up the border
  * */
 void editorDrawRows(struct abuf *ab) {
+  char *board = board_get();
+  int len = board_len();
+
   for (int y = 0; y < E.screenRows; y++) {
-    // if (y == E.screenRows / 3) {
-    //   char welcome[80];
-    //   int len;
-
-    //   getWelcomeString(welcome, sizeof(welcome), &len);
-    //   int padding = (E.screenCols - len) / 2;
-    //   if (padding) {
-    //     abAppend(ab, "~", 1);
-    //     padding--;
-    //   }
-
-    //   while (padding--) abAppend(ab, " ", 1);
-
-    //   abAppend(ab, welcome, len);
-    // } else {
-    //   abAppend(ab, "~", 1);
-    // }
-
     for (int x = 0; x < E.screenCols; x++) {
       int curr = y * E.screenCols + x;
+
       if (curr == g_tetro->seq[0] || curr == g_tetro->seq[1] ||
           curr == g_tetro->seq[2] || curr == g_tetro->seq[3]) {
         abAppend(ab, "X", 1);
+      } else if (curr < len && board[curr]) {
+        abAppend(ab, "M", 1);
       } else {
         abAppend(ab, " ", 1);
       }
@@ -397,8 +424,6 @@ void editorDrawRows(struct abuf *ab) {
  * */
 void editorRefreshScreen() {
   struct abuf ab = ABUF_INIT;
-
-  g_tetro->rotate(g_tetro, E.screenCols);
 
   abAppend(&ab, "\x1b[?25l", 6);
   abAppend(&ab, "\x1b[H", 3);
@@ -420,23 +445,41 @@ void editorRefreshScreen() {
 
 // init
 
+void wait(int seconds) {
+  struct timeval timer, start;
+  gettimeofday(&start, NULL);
+  timer = start;
+  while (timer.tv_sec - start.tv_sec < seconds) { 
+    gettimeofday(&timer, NULL);
+  }
+}
+
+void updateGame() {
+  g_tetro->pos += E.screenCols;
+  g_tetro->update(g_tetro, E.screenCols);
+
+  if (board_collides(g_tetro)) {
+    g_tetro->pos -= E.screenCols;
+    g_tetro->update(g_tetro, E.screenCols);
+
+    board_addToBoard(g_tetro, E.screenCols);
+    tetro_free(g_tetro);
+    g_tetro = tetro_create();
+  }
+}
+
 int main() {
-  g_tetro = tetro_create();
   enableRawMode();
   initEditor();
 
-  struct timeval timer, start;
-  gettimeofday(&timer, NULL);
-  while (1) {
-    gettimeofday(&start, NULL);
-    if (start.tv_sec - timer.tv_sec > 5) {
-      tetro_free(g_tetro);
-      g_tetro = tetro_create();
-      timer = start;
-    }
+  g_tetro = tetro_create();
+  g_tetro->update(g_tetro, E.screenCols);
+  board_create(E.screenRows, E.screenCols);
 
+  while (1) {
     editorRefreshScreen();
     editorProcessKeypress();
+    updateGame();
   }
 
   return 0;

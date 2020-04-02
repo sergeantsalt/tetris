@@ -1,3 +1,4 @@
+#pragma once
 
 enum orientation {
   DOWN = 1,
@@ -15,11 +16,11 @@ enum tetro_type {
 };
 
 typedef struct tetro_t {
-  enum tetro_type type;
   enum orientation o;
+  enum tetro_type type;
   int pos;
   int seq[4];
-  void (*rotate)(struct tetro_t *t, int screenWidth);
+  void (*update)(struct tetro_t *t, int screenWidth);
 } tetro;
 
 tetro *tetro_create();

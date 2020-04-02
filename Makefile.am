@@ -1,2 +1,2 @@
 bin_PROGRAMS=kilo
-kilo_SOURCES=kilo.c tetro.c
+kilo_SOURCES=kilo.c tetro.c board.c

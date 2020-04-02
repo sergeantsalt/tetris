@@ -6,10 +6,8 @@
 #include <time.h>
 
 void tetro_lineRotate(tetro *t, int screenWidth) {
-  if (t->o == RIGHT) {
+  if (t->o > RIGHT) {
     t->o = DOWN;
-  } else {
-    t->o++;
   }
 
   switch (t->o) {
@@ -48,10 +46,8 @@ void tetro_squareRotate(tetro *t, int screenWidth) {
 }
 
 void tetro_pRotate(tetro *t, int screenWidth) {
-  if (t->o == RIGHT) {
+  if (t->o > RIGHT) {
     t->o = DOWN;
-  } else {
-    t->o++;
   }
 
   switch (t->o) {
@@ -83,10 +79,8 @@ void tetro_pRotate(tetro *t, int screenWidth) {
 }
 
 void tetro_zRotate(tetro *t, int screenWidth) {
-  if (t->o == RIGHT) {
+  if (t->o > RIGHT) {
     t->o = DOWN;
-  } else {
-    t->o++;
   }
 
   switch (t->o) {
@@ -118,10 +112,8 @@ void tetro_zRotate(tetro *t, int screenWidth) {
 }
 
 void tetro_lRotate(tetro *t, int screenWidth) {
-  if (t->o == RIGHT) {
+  if (t->o > RIGHT) {
     t->o = DOWN;
-  } else {
-    t->o++;
   }
 
   switch (t->o) {
@@ -153,7 +145,7 @@ void tetro_lRotate(tetro *t, int screenWidth) {
 }
 
 #define TETRO_INIT \
-  { RIGHT, 0, 400, {0, 400, 0, 0}, NULL }
+  { DOWN, 0, 400, {0, 400, 0, 0}, NULL }
 
 tetro *tetro_create() {
   struct timeval stop, start;
@@ -165,11 +157,11 @@ tetro *tetro_create() {
   memcpy(p, &temp, sizeof(tetro));
   p->type = type;
   switch (p->type) {
-    case LINE_BLOCK: p->rotate = tetro_lineRotate; break;
-    case SQUARE_BLOCK: p->rotate = tetro_squareRotate; break;
-    case P_BLOCK: p->rotate = tetro_pRotate; break;
-    case Z_BLOCK: p->rotate = tetro_zRotate; break;
-    case L_BLOCK: p->rotate = tetro_lRotate; break;
+    case LINE_BLOCK: p->update = tetro_lineRotate; break;
+    case SQUARE_BLOCK: p->update = tetro_squareRotate; break;
+    case P_BLOCK: p->update = tetro_pRotate; break;
+    case Z_BLOCK: p->update = tetro_zRotate; break;
+    case L_BLOCK: p->update = tetro_lRotate; break;
   }
   return p;
 }
