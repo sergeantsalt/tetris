@@ -1,5 +1,6 @@
 
 #include <string.h>
+#include <stdlib.h>
 #include "board.h"
 
 static char *g_board;
@@ -9,8 +10,6 @@ void board_create(int rows, int cols) {
   len = rows * cols;
   g_board = malloc(sizeof(char) * len);
   memset(g_board, 0, sizeof(char) * len);
-  
-  return g_board;
 }
 
 void board_free() {

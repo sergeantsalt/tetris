@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-// #include <ncurses.h>
+#include <ncurses.h>
 
 #include "tetro.h"
 #include "board.h"
@@ -186,7 +186,7 @@ int parseEscapeSeq() {
 void clearInputStream() {
   int nread;
   char c;
-  while (nread = read(STDIN_FILENO, &c, 1) > 0) { 
+  while ((nread = read(STDIN_FILENO, &c, 1)) > 0) { 
     if (nread == -1 && errno != EAGAIN) die("read");
   }
 }
@@ -195,22 +195,24 @@ void clearInputStream() {
  * @brief Reads a key press input.
  * */
 int editorReadKey() {
-  int nread;
+  // int nread;
   char c;
-  struct timeval timer, start;
 
-  gettimeofday(&start, NULL);
-  timer = start;
+  c = getch();
+  // struct timeval timer, start;
 
-  while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+  // gettimeofday(&start, NULL);
+  // timer = start;
 
-    gettimeofday(&timer, NULL);
-    if (timer.tv_sec - start.tv_sec >= 1) {
-      break;
-    }
+  // while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
 
-    if (nread == -1 && errno != EAGAIN) die("read");
-  }
+  //   gettimeofday(&timer, NULL);
+  //   if (timer.tv_sec - start.tv_sec >= 1) {
+  //     break;
+  //   }
+
+  //   if (nread == -1 && errno != EAGAIN) die("read");
+  // }
 
   if (c == '\x1b') {
     return parseEscapeSeq();
@@ -394,6 +396,7 @@ void editorProcessKeypress() {
     case ARROW_UP:
       break;
     case ARROW_DOWN:
+      moveDown();
       break;
     case ARROW_LEFT:
       moveLeft();
@@ -474,15 +477,6 @@ void editorRefreshScreen() {
 
 // init
 
-void wait(int seconds) {
-  struct timeval timer, start;
-  gettimeofday(&start, NULL);
-  timer = start;
-  while (timer.tv_sec - start.tv_sec < seconds) { 
-    gettimeofday(&timer, NULL);
-  }
-}
-
 void moveDown() {
   g_tetro->pos += E.screenCols;
   g_tetro->update(g_tetro, E.screenCols);
@@ -510,9 +504,21 @@ void updateGame() {
   frame++;
 }
 
+void waitFor(int ms) {
+  struct timer t = getTimer();
+  while (t.elapsed(&t) < ms) { }
+}
+
 int main() {
   enableRawMode();
   initEditor();
+
+  //ncurses
+  initscr();
+  raw();
+  noecho();
+  cbreak();
+  nodelay(stdscr, TRUE);
 
   g_tetro = tetro_create();
   g_tetro->update(g_tetro, E.screenCols);
@@ -520,8 +526,9 @@ int main() {
 
   while (1) {
     editorRefreshScreen();
-    editorProcessKeypress();
     updateGame();
+    editorProcessKeypress();
+    waitFor(17);
   }
 
   return 0;
