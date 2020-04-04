@@ -8,3 +8,5 @@ char *board_get();
 
 void board_addToBoard(tetro *t, int screenCols);
 int board_collides(tetro *t);
+int board_len();
+void board_checkRowShift();

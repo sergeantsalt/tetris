@@ -148,7 +148,7 @@ void tetro_lRotate(tetro *t, int screenWidth) {
   { DOWN, 0, 400, {0, 400, 0, 0}, NULL }
 
 tetro *tetro_create() {
-  struct timeval stop, start;
+  struct timeval start;
   gettimeofday(&start, NULL);
   int type = start.tv_usec % 3 + 1;
 
