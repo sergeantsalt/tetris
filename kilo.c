@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+// #include <ncurses.h>
 
 #include "tetro.h"
 #include "board.h"
@@ -23,13 +24,31 @@
  * @brief Version info
  * */
 #define KILO_VERSION "0.0.1"
-
 /**
  * @brief This macro does a bitwise and against 0001 1111
  * which clears out the key modifiers like CTRL so we can
  * compare against the char value to test which key was pressed.
  * */
 #define CTRL_K(k) ((k)&0x1f)
+
+struct timer {
+  unsigned long start;
+  unsigned long (*elapsed)(struct timer *t);
+};
+
+unsigned long elapsed_calc(struct timer *t) {
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  return (unsigned long)((((now.tv_sec * (unsigned long)1e6) + now.tv_usec) / 1000) - t->start);
+}
+
+struct timer getTimer() {
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  return (struct timer) {
+    .start = (unsigned long)(((now.tv_sec * (unsigned long)1e6) + now.tv_usec) / 1000),
+    .elapsed = elapsed_calc};
+}
 
 /**
  * @brief All special keypresses.
@@ -162,6 +181,14 @@ int parseEscapeSeq() {
   }
 
   return '\x1b';
+}
+
+void clearInputStream() {
+  int nread;
+  char c;
+  while (nread = read(STDIN_FILENO, &c, 1) > 0) { 
+    if (nread == -1 && errno != EAGAIN) die("read");
+  }
 }
 
 /**
@@ -335,9 +362,9 @@ void moveRight() {
  * @brief Process key presses
  * */
 void editorProcessKeypress() {
-  int c = editorReadKey();
+   int c = editorReadKey();
 
-  switch (c) {
+   switch (c) {
     case CTRL_K('q'):
       write(STDOUT_FILENO, "\x1b[2J", 4);
       write(STDOUT_FILENO, "\x1b[H", 3);
@@ -456,7 +483,7 @@ void wait(int seconds) {
   }
 }
 
-void updateGame() {
+void moveDown() {
   g_tetro->pos += E.screenCols;
   g_tetro->update(g_tetro, E.screenCols);
 
@@ -468,6 +495,19 @@ void updateGame() {
     tetro_free(g_tetro);
     g_tetro = tetro_create();
   }
+}
+
+void updateGame() {
+  static int frame = 1;
+
+  if (frame == 60) {
+    frame = 1;
+    moveDown();
+  } else {
+    g_tetro->update(g_tetro, E.screenCols);
+  }
+
+  frame++;
 }
 
 int main() {
