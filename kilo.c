@@ -501,6 +501,8 @@ void updateGame() {
     g_tetro->update(g_tetro, E.screenCols);
   }
 
+  board_checkRowShift(E.screenRows, E.screenCols);
+
   frame++;
 }
 

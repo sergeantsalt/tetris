@@ -50,3 +50,31 @@ int board_collides(tetro *t) {
 
   return retVal;
 }
+
+static void shiftRowsDown(int rows, int cols, int pos) {
+  for (int i = (pos + cols - 1); i >= cols; i--) {
+    g_board[i] = g_board[i - cols];
+  }
+}
+
+void board_checkRowShift(int rows, int cols) {
+  for (int i = (rows - 1); i > 0; i--) {
+    int pos = i * cols;
+    int streak = 0;
+    for (int j = pos; j < (pos + cols); j++) {
+      if (g_board[j] && streak == 0) {
+        streak++;
+      } else if (g_board[j] && streak > 0) {
+        streak++;
+      } else if (!g_board[j] && streak == 0) {
+        continue;
+      } else if (!g_board[j] && streak > 0) {
+        break;
+      }
+    }
+
+    if (streak >= 5) {
+      shiftRowsDown(rows, cols, pos);
+    }
+  }
+}
